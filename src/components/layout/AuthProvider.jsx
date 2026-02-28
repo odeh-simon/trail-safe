@@ -1,31 +1,30 @@
 import { useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { ensureAuth, getUserRole } from "@/lib/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { ensureAuth } from "@/lib/firestore";
+import { unlockAudioContext } from "@/lib/alertSound";
 import { useAuthStore } from "@/store/useAuthStore";
 
-/**
- * Ensures anonymous auth on load and fetches role. Redirects authenticated users with role.
- */
 export default function AuthProvider({ children }) {
-  const { user, role, setUser, setRole, setLoading } = useAuthStore();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { setUser, setRole, setLoading } = useAuthStore();
 
   useEffect(() => {
     const unlockAudio = () => {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) {
-        const ctx = new AudioContext();
-        ctx.resume?.();
-      }
+      unlockAudioContext();
       document.removeEventListener("click", unlockAudio);
+      document.removeEventListener("touchstart", unlockAudio);
     };
     document.addEventListener("click", unlockAudio);
-    return () => document.removeEventListener("click", unlockAudio);
+    document.addEventListener("touchstart", unlockAudio);
+    return () => {
+      document.removeEventListener("click", unlockAudio);
+      document.removeEventListener("touchstart", unlockAudio);
+    };
   }, []);
 
   useEffect(() => {
     let cancelled = false;
+    let unsubRole = null;
 
     async function init() {
       try {
@@ -33,21 +32,38 @@ export default function AuthProvider({ children }) {
         if (cancelled) return;
         setUser(u);
 
-        const r = await getUserRole(u.uid);
-        if (cancelled) return;
-        setRole(r);
-
-        // Do not auto-redirect from Landing — users can always visit / to switch roles
+        unsubRole = onSnapshot(
+          doc(db, "users", u.uid),
+          (snap) => {
+            if (cancelled) return;
+            const role = snap.exists() ? (snap.data().role ?? null) : null;
+            setRole(role);
+            setLoading(false);
+          },
+          (err) => {
+            console.error("AuthProvider role watch error:", err);
+            if (!cancelled) {
+              setRole(null);
+              setLoading(false);
+            }
+          }
+        );
       } catch (err) {
-        if (!cancelled) setRole(null);
-      } finally {
-        if (!cancelled) setLoading(false);
+        console.error("AuthProvider init error:", err);
+        if (!cancelled) {
+          setRole(null);
+          setLoading(false);
+        }
       }
     }
 
     init();
-    return () => { cancelled = true; };
-  }, [setUser, setRole, setLoading, navigate, location.pathname]);
+
+    return () => {
+      cancelled = true;
+      unsubRole?.();
+    };
+  }, [setUser, setRole, setLoading]);
 
   return children;
 }

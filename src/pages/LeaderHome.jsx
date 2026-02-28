@@ -10,7 +10,7 @@ import { useActiveHike } from "@/hooks/useActiveHike";
 import { useLeaderProfile } from "@/hooks/useLeaderProfile";
 import { useIncident } from "@/hooks/useIncident";
 import { useHikersForHike } from "@/hooks/useHikersForHike";
-import { joinAsLeader, respondToIncident } from "@/lib/firestore";
+import { respondToIncident } from "@/lib/firestore";
 import BottomNav from "@/components/layout/BottomNav";
 
 export default function LeaderHome() {
@@ -19,18 +19,10 @@ export default function LeaderHome() {
   const { hike } = useActiveHike();
   const { leader, loading: leaderLoading } = useLeaderProfile(user?.uid, hike?.id);
   const { myIncidents, otherIncidents, loading: incidentsLoading } = useIncident(
-    hike?.id,
+    hike?.status === "ended" ? null : hike?.id,
     leader?.id ? leader.userId : null
   );
   const { hikers } = useHikersForHike(hike?.id);
-  const [joining, setJoining] = useState(false);
-
-  const handleJoin = async () => {
-    if (!hike || !user) return;
-    setJoining(true);
-    await joinAsLeader(hike.id, user.uid, "Leader", "");
-    setJoining(false);
-  };
 
   const handleRespond = async (incidentId) => {
     if (!leader) return;
@@ -65,39 +57,66 @@ export default function LeaderHome() {
     );
   }
 
+  if (hike?.status === "ended") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] p-6 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-full bg-[var(--color-primary-light)] flex items-center justify-center mb-4 mx-auto">
+          <span className="text-3xl">🏔️</span>
+        </div>
+        <h2 className="text-xl font-bold text-[var(--color-dark)] mb-2">
+          Hike Concluded
+        </h2>
+        <p className="text-[var(--color-mid)]">
+          This hike has ended. All incidents are now closed.
+        </p>
+      </div>
+    );
+  }
+
   if (!leader) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] p-6">
-        <h1 className="text-xl font-bold mb-4">{hike.name}</h1>
-        <p className="text-[var(--color-mid)] text-center mb-6">
-          Join as a leader to receive SOS alerts.
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] p-6 text-center max-w-md mx-auto">
+        <h2 className="text-xl font-bold text-[var(--color-dark)] mb-2">
+          Not Joined
+        </h2>
+        <p className="text-[var(--color-mid)] mb-6">
+          Open your leader invite link from the organizer to join this hike.
         </p>
-        <Button
-          className="min-h-[48px]"
-          onClick={handleJoin}
-          disabled={joining}
-        >
-          {joining ? "Joining..." : "Join as Leader"}
+        <Button variant="outline" onClick={() => navigate("/")} className="min-h-[48px]">
+          Back to Home
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] p-4 pb-24 max-w-[430px] mx-auto">
-      <h1 className="text-2xl font-bold text-[var(--color-dark)] mb-1">
-        {hike.name}
-      </h1>
-      <p className="text-[var(--color-mid)] mb-4">
-        {leader.name}
-        {leader.roleTitle && (
-          <Badge variant="outline" className="ml-2 text-xs">
-            {leader.roleTitle}
-          </Badge>
-        )}
-      </p>
+    <div className="min-h-screen bg-[var(--color-bg)] md:pt-16">
+      <div className="max-w-5xl mx-auto px-4 py-6 pb-24">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--color-dark)]">{hike.name}</h1>
+            <p className="text-[var(--color-mid)]">
+              {leader.name}
+              {leader.roleTitle && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {leader.roleTitle}
+                </Badge>
+              )}
+            </p>
+          </div>
+          <div className="hidden sm:flex gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[var(--color-success)]">{checkedIn}</p>
+              <p className="text-xs text-[var(--color-mid)]">Checked In</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[var(--color-danger)]">{allIncidents.length}</p>
+              <p className="text-xs text-[var(--color-mid)]">Incidents</p>
+            </div>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="grid grid-cols-2 sm:hidden gap-2 mb-4">
         <Card>
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold text-[var(--color-success)]">{checkedIn}</p>
@@ -207,7 +226,8 @@ export default function LeaderHome() {
         </TabsContent>
       </Tabs>
 
-      <BottomNav role="leader" incidentCount={activeCount} />
+        <BottomNav role="leader" incidentCount={activeCount} />
+      </div>
     </div>
   );
 }

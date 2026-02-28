@@ -46,8 +46,8 @@ export default function JoinAsLeader() {
   };
 
   const loading = authLoading || hikeLoading;
-  const hikeEnded = hike && hike.status === "ended";
-  const invalidHike = hikeError || !hike || hikeEnded;
+  const hikeEnded = !hikeLoading && hike && hike.status === "ended";
+  const invalidHike = !hikeLoading && (hikeError || !hike || hikeEnded);
 
   if (loading && !leader) {
     return (

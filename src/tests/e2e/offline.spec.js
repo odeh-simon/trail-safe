@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { waitForLanding, createAndStartHike } from "./helpers.js";
+import {
+  waitForLanding,
+  goToOrganizerWithPin,
+  createAndStartHike,
+  getInviteLinks,
+} from "./helpers.js";
 
 test.describe("Offline SOS", () => {
   test("offline banner appears when no connection", async ({ page, context }) => {
@@ -18,12 +23,11 @@ test.describe("Offline SOS", () => {
 
     await p.goto("/");
     await waitForLanding(p);
-    await p.getByRole("button", { name: /i'm organizing/i }).click();
-    await p.waitForURL("**/organizer");
+    await goToOrganizerWithPin(p);
     await createAndStartHike(p, { name: "Offline Test Hike", trail: "Test", date: "2030-12-31T09:00" });
+    const { hikerUrl } = await getInviteLinks(p);
 
-    await p.goto("/");
-    await p.getByRole("button", { name: /i'm hiking today/i }).click();
+    await p.goto(hikerUrl);
     await p.waitForURL("**/register");
     await p.getByLabel("Full Name *").fill("Offline Hiker");
     await p.getByLabel("Phone *").fill("+27821111111");

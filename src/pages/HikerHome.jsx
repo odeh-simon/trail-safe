@@ -74,38 +74,30 @@ export default function HikerHome() {
     );
   }
 
-  if (!hike) {
+  if (!hikeLoading && !hikerLoading && (!hike || !hiker)) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] p-6">
-        <p className="text-[var(--color-mid)] text-center mb-4">
-          No active hike. Register for an upcoming hike first.
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] p-6 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-full bg-[var(--color-primary-light)] flex items-center justify-center mb-4 mx-auto">
+          <span className="text-3xl">🏔️</span>
+        </div>
+        <h2 className="text-xl font-bold text-[var(--color-dark)] mb-2">
+          Hike Concluded
+        </h2>
+        <p className="text-[var(--color-mid)]">
+          This hike has ended. Thank you for hiking safely!
         </p>
-        <Button asChild>
-          <Link to="/register">Register</Link>
-        </Button>
-      </div>
-    );
-  }
-
-  if (!hiker) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] p-6">
-        <p className="text-[var(--color-mid)] text-center mb-4">
-          You need to register for this hike first.
-        </p>
-        <Button asChild>
-          <Link to="/register">Register</Link>
-        </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] p-4 pb-32 max-w-[430px] mx-auto">
-      <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg">{hike.name}</CardTitle>
+    <div className="min-h-screen bg-[var(--color-bg)] md:pt-16">
+      <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">{hike.name}</CardTitle>
             <Badge
               variant={
                 hike.status === "active" ? "default" : hike.status === "ended" ? "secondary" : "outline"
@@ -121,11 +113,10 @@ export default function HikerHome() {
             </p>
           )}
         </CardHeader>
-      </Card>
-
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Check In</CardTitle>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Check In</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {hikerStatus === "not_checked_in" && (
@@ -180,9 +171,10 @@ export default function HikerHome() {
             </>
           )}
         </CardContent>
-      </Card>
+          </Card>
+        </div>
 
-      {hikerStatus === "checked_in" && hike.status === "active" && (
+        {hikerStatus === "checked_in" && hike.status === "active" && (
         <div className="mb-4">
           {sosSent && (
             <Card className="mb-4 border-[var(--color-primary)] bg-[var(--color-primary-light)]">
@@ -242,7 +234,8 @@ export default function HikerHome() {
         </div>
       )}
 
-      <BottomNav role="hiker" />
+        <BottomNav role="hiker" />
+      </div>
     </div>
   );
 }

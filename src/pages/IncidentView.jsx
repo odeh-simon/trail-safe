@@ -65,7 +65,7 @@ export default function IncidentView() {
   const isResolved = incident.status === "resolved";
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] p-4 pb-24 max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-[var(--color-bg)] p-4 pb-24 max-w-2xl mx-auto">
       <div className="mb-4">
         <Link to="/organizer" className="text-sm text-[var(--color-accent)] underline">
           ← Back to Dashboard

@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { waitForLanding, createAndStartHike } from "./helpers.js";
+import {
+  waitForLanding,
+  goToOrganizerWithPin,
+  createAndStartHike,
+  getInviteLinks,
+} from "./helpers.js";
 
 test.describe("Hiker Registration to Check-In", () => {
   test("full registration and check-in flow", async ({ page }) => {
@@ -9,13 +14,13 @@ test.describe("Hiker Registration to Check-In", () => {
     const orgPage = await page.context().newPage();
     await orgPage.goto("/");
     await waitForLanding(orgPage);
-    await orgPage.getByRole("button", { name: /i'm organizing/i }).click();
-    await orgPage.waitForURL("**/organizer");
+    await goToOrganizerWithPin(orgPage);
     await createAndStartHike(orgPage, { name: "Reg Test Hike", trail: "Trail", date: "2030-06-15T08:00" });
+    const { hikerUrl } = await getInviteLinks(orgPage);
     await orgPage.close();
 
-    // Hiker selects role and lands on register
-    await page.getByRole("button", { name: /i'm hiking today/i }).click();
+    // Hiker uses invite link and lands on register
+    await page.goto(hikerUrl);
     await page.waitForURL("**/register");
 
     // Fill registration form

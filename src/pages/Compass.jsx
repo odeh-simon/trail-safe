@@ -1,4 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useCompass } from "@/hooks/useCompass";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { getDistance, getBearing } from "@/lib/haversine";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { updateLeaderLocation, respondToIncident, resolveIncident } from "@/lib/firestore";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useLeaderProfile } from "@/hooks/useLeaderProfile";
 
 function CollapsibleEmergency({ incident }) {
   const [open, setOpen] = useState(false);
@@ -27,17 +38,6 @@ function CollapsibleEmergency({ incident }) {
     </div>
   );
 }
-import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useCompass } from "@/hooks/useCompass";
-import { useGeolocation } from "@/hooks/useGeolocation";
-import { getDistance, getBearing } from "@/lib/haversine";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { updateLeaderLocation, respondToIncident, resolveIncident } from "@/lib/firestore";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useLeaderProfile } from "@/hooks/useLeaderProfile";
 
 export default function Compass() {
   const { incidentId } = useParams();
@@ -155,7 +155,8 @@ export default function Compass() {
       : "inherit";
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-white p-4 flex flex-col">
+    <div className="min-h-screen bg-[#0F172A] text-white">
+      <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col min-h-screen">
       <div className="flex-1 flex flex-col items-center justify-center">
         <div
           className="w-[280px] h-[280px] rounded-full border-4 border-[var(--color-accent)] flex items-center justify-center relative"
@@ -221,6 +222,7 @@ export default function Compass() {
           {resolving ? "Closing..." : "Arrived — Close Incident"}
         </Button>
       )}
+      </div>
     </div>
   );
 }

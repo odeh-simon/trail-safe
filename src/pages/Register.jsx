@@ -124,8 +124,26 @@ export default function Register() {
     );
   }
 
+  if (!hikeLoading && hike?.status === "ended") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] p-6">
+        <Card className="max-w-sm w-full">
+          <CardContent className="pt-6 text-center space-y-4">
+            <p className="font-medium text-[var(--color-dark)]">Registration Closed</p>
+            <p className="text-sm text-[var(--color-mid)]">
+              This hike has ended. Registration is no longer available.
+            </p>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              Back to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] p-4 pb-24 max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-[var(--color-bg)] p-4 pb-24 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-[var(--color-dark)] mb-4">
         Hiker Registration
       </h1>

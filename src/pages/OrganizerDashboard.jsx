@@ -22,8 +22,14 @@ export default function OrganizerDashboard() {
   const { currentHike, setCurrentHike, loading: hikesLoading, error: hikesError, refetch } = useOrganizerHikes(user?.uid);
   const { hikers, loading: hikersLoading } = useHikersForHike(currentHike?.id);
   const { leaders, loading: leadersLoading } = useLeadersForHike(currentHike?.id);
-  const { myIncidents: allIncidents } = useIncident(currentHike?.id);
-  const { myIncidents: fullIncidentLog } = useIncident(currentHike?.id, null, { includeResolved: true });
+  const { myIncidents: allIncidents } = useIncident(
+    currentHike?.status === "ended" ? null : currentHike?.id
+  );
+  const { myIncidents: fullIncidentLog } = useIncident(
+    currentHike?.status === "ended" ? null : currentHike?.id,
+    null,
+    { includeResolved: true }
+  );
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [starting, setStarting] = useState(false);
   const [ending, setEnding] = useState(false);
@@ -84,10 +90,11 @@ export default function OrganizerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] p-4 pb-24 max-w-[430px] mx-auto">
-      <h1 className="text-2xl font-bold text-[var(--color-dark)] mb-4">
-        Organizer Dashboard
-      </h1>
+    <div className="min-h-screen bg-[var(--color-bg)]">
+      <div className="max-w-6xl mx-auto px-4 py-6 pb-24">
+        <h1 className="text-2xl font-bold text-[var(--color-dark)] mb-4">
+          Organizer Dashboard
+        </h1>
 
       {hikesError && (
         <p className="text-[var(--color-danger)] mb-4">{hikesError}</p>
@@ -190,7 +197,7 @@ export default function OrganizerDashboard() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2 mb-4">
             <Card>
               <CardContent className="p-3 text-center">
                 <p className="text-2xl font-bold text-[var(--color-dark)]">
@@ -395,6 +402,7 @@ export default function OrganizerDashboard() {
           </Button>
         </>
       )}
+      </div>
     </div>
   );
 }

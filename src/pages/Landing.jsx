@@ -43,13 +43,16 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-[var(--color-primary)] to-[var(--color-primary-dark)]">
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
-          Trail Safe
-        </h1>
-        <p className="text-white/90 text-lg mb-12">Hike together. Stay safe.</p>
-
+    <div className="min-h-screen flex flex-col lg:flex-row bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-dark)]">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 py-16 text-center lg:text-left lg:items-start">
+        <h1 className="text-5xl lg:text-7xl font-bold text-white mb-4">Trail Safe</h1>
+        <p className="text-white/80 text-xl lg:text-2xl mb-2">Hike together. Stay safe.</p>
+        <p className="text-white/60 text-base max-w-md">
+          Real-time safety management for hiking groups. GPS check-in, SOS alerts,
+          and compass-guided emergency response.
+        </p>
+      </div>
+      <div className="flex flex-col items-center justify-center px-8 py-12 lg:w-96 bg-white/10 backdrop-blur-sm">
         <div className="w-full max-w-sm space-y-4">
           <Button
             onClick={() => setPinOpen(true)}
@@ -58,11 +61,10 @@ export default function Landing() {
           >
             Organizer Access
           </Button>
+          <p className="text-white/60 text-sm text-center">
+            Joining a hike? Use the link your organizer shared with you.
+          </p>
         </div>
-
-        <p className="text-white/70 text-sm mt-12 text-center max-w-xs">
-          Joining a hike? Use the link your organizer shared with you.
-        </p>
       </div>
 
       <Dialog open={pinOpen} onOpenChange={setPinOpen}>

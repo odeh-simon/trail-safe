@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { waitForLanding, createAndStartHike } from "./helpers.js";
+import {
+  waitForLanding,
+  goToOrganizerWithPin,
+  createAndStartHike,
+  getInviteLinks,
+  joinAsLeaderViaLink,
+} from "./helpers.js";
 
 test.describe("Full SOS Emergency Flow", () => {
   test("hiker fires SOS and leader gets dispatched", async ({ browser }) => {
@@ -18,18 +24,15 @@ test.describe("Full SOS Emergency Flow", () => {
     const orgPage = await browser.newPage();
     await orgPage.goto("/");
     await waitForLanding(orgPage);
-    await orgPage.getByRole("button", { name: /i'm organizing/i }).click();
-    await orgPage.waitForURL("**/organizer");
+    await goToOrganizerWithPin(orgPage);
     await createAndStartHike(orgPage, { name: "E2E Test Hike", trail: "Test Trail", date: "2030-12-31T09:00" });
+    const { leaderUrl, hikerUrl } = await getInviteLinks(orgPage);
     await orgPage.close();
 
-    await leaderPage.goto("/");
-    await leaderPage.getByRole("button", { name: /i'm a leader/i }).click();
-    await leaderPage.waitForURL("**/leader");
-    await leaderPage.getByRole("button", { name: /join as leader/i }).click();
+    await leaderPage.goto(leaderUrl);
+    await joinAsLeaderViaLink(leaderPage);
 
-    await hikerPage.goto("/");
-    await hikerPage.getByRole("button", { name: /i'm hiking today/i }).click();
+    await hikerPage.goto(hikerUrl);
     await hikerPage.waitForURL("**/register");
     await hikerPage.getByLabel("Full Name *").fill("E2E Hiker");
     await hikerPage.getByLabel("Phone *").fill("+27821234567");

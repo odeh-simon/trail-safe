@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useHike } from "@/hooks/useHike";
 import { useHikerProfile } from "@/hooks/useHikerProfile";
 import { setUserProfile } from "@/lib/firestore";
+import { Card, CardContent } from "@/components/ui/card";
 
 const INVITE_HIKE_KEY = "trailsafe_invite_hikeId";
 
@@ -49,7 +50,16 @@ export default function JoinAsHiker() {
     sessionStorage.removeItem(INVITE_HIKE_KEY);
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] p-6">
-        <p className="text-[var(--color-danger)]">This invite link is no longer valid.</p>
+        <Card className="max-w-sm w-full">
+          <CardContent className="pt-6 text-center">
+            <p className="text-[var(--color-danger)] font-medium mb-2">
+              This invite link is no longer valid.
+            </p>
+            <p className="text-sm text-[var(--color-mid)]">
+              The hike may have ended or the link may be incorrect.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }

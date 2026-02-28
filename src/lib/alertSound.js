@@ -1,33 +1,66 @@
+let _audioCtx = null;
+
+function getAudioContext() {
+  if (!_audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return null;
+    _audioCtx = new AudioContext();
+  }
+  return _audioCtx;
+}
+
 /**
- * Plays an SOS alert sound using Web Audio API.
- * No external files needed — works offline.
- * Call from a user gesture context or on first user interaction to unlock audio.
+ * Call this from a user gesture to unlock the audio context.
+ * Called by AuthProvider on first click/touch.
+ */
+export function unlockAudioContext() {
+  try {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume();
+    }
+  } catch (err) {
+    console.warn("unlockAudioContext failed:", err);
+  }
+}
+
+/**
+ * Plays a three-beep SOS alert sound.
+ * Works offline — uses Web Audio API synthesis, no files needed.
+ * Requires prior call to unlockAudioContext() from a user gesture.
  */
 export function playSOSAlert() {
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
 
-    const ctx = new AudioContext();
+    if (ctx.state === "suspended") {
+      ctx.resume().then(() => _playBeeps(ctx));
+      return;
+    }
 
-    const playBeep = (startTime, frequency = 880, duration = 0.2) => {
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      oscillator.frequency.value = frequency;
-      oscillator.type = "sine";
-      gainNode.gain.setValueAtTime(0.5, startTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-      oscillator.start(startTime);
-      oscillator.stop(startTime + duration);
-    };
-
-    const now = ctx.currentTime;
-    playBeep(now, 880, 0.15);
-    playBeep(now + 0.2, 880, 0.15);
-    playBeep(now + 0.4, 1100, 0.3);
+    _playBeeps(ctx);
   } catch (err) {
-    console.warn("SOS alert sound failed:", err);
+    console.warn("playSOSAlert failed:", err);
   }
+}
+
+function _playBeeps(ctx) {
+  const beep = (startTime, freq, duration) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(0.6, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.01);
+  };
+
+  const now = ctx.currentTime;
+  beep(now, 880, 0.15);
+  beep(now + 0.2, 880, 0.15);
+  beep(now + 0.4, 1100, 0.35);
 }

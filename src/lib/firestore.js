@@ -90,7 +90,31 @@ export async function startHike(hikeId) {
  * @param {string} hikeId
  */
 export async function endHike(hikeId) {
-  await updateDoc(doc(db, "hikes", hikeId), { status: "ended" });
+  try {
+    await updateDoc(doc(db, "hikes", hikeId), { status: "ended" });
+
+    const hikersSnap = await getDocs(
+      query(collection(db, "hikers"), where("hikeId", "==", hikeId))
+    );
+    for (const h of hikersSnap.docs) {
+      const userId = h.data().userId;
+      if (userId) {
+        await setDoc(doc(db, "users", userId), { role: null }, { merge: true });
+      }
+    }
+
+    const leadersSnap = await getDocs(
+      query(collection(db, "leaders"), where("hikeId", "==", hikeId))
+    );
+    for (const l of leadersSnap.docs) {
+      const userId = l.data().userId;
+      if (userId) {
+        await setDoc(doc(db, "users", userId), { role: null }, { merge: true });
+      }
+    }
+  } catch (err) {
+    console.error("endHike:", err);
+  }
 }
 
 /**
@@ -119,6 +143,15 @@ export async function registerHiker(hikerData) {
  */
 export async function checkInHiker(hikerId, location) {
   try {
+    const hikerSnap = await getDoc(doc(db, "hikers", hikerId));
+    const hikeId = hikerSnap.data()?.hikeId;
+    if (hikeId) {
+      const hikeSnap = await getDoc(doc(db, "hikes", hikeId));
+      if (hikeSnap.data()?.status !== "active") {
+        console.warn("checkInHiker: hike is not active, blocking check-in");
+        return;
+      }
+    }
     await updateDoc(doc(db, "hikers", hikerId), {
       checkedIn: true,
       checkedInAt: serverTimestamp(),
