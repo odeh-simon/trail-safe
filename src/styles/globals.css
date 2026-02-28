@@ -1,0 +1,37 @@
+@import "./tokens.css";
+
+/* shadcn/ui CSS variables mapped to design tokens */
+@layer base {
+  :root {
+    --background: var(--color-bg);
+    --foreground: var(--color-dark);
+    --card: var(--color-surface);
+    --card-foreground: var(--color-dark);
+    --popover: var(--color-surface);
+    --popover-foreground: var(--color-dark);
+    --primary: var(--color-primary);
+    --primary-foreground: white;
+    --secondary: var(--color-bg-alt);
+    --secondary-foreground: var(--color-dark);
+    --muted: var(--color-bg-alt);
+    --muted-foreground: var(--color-mid);
+    --accent: var(--color-primary-light);
+    --accent-foreground: var(--color-primary-dark);
+    --destructive: var(--color-danger);
+    --destructive-foreground: white;
+    --border: var(--color-border);
+    --input: var(--color-border);
+    --ring: var(--color-primary);
+    --radius: var(--radius-md);
+  }
+
+  body {
+    @apply font-sans antialiased;
+    background-color: var(--color-bg);
+    color: var(--color-dark);
+  }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

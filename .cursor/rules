@@ -1,0 +1,25 @@
+# Cursor Rules for Trail Safe
+
+always:
+  - Use JSDoc comments on all exported functions
+  - Import from @/ not relative paths where possible
+  - Use shadcn/ui components, never raw HTML inputs or buttons
+  - Write tests alongside any new component or hook
+  - Handle loading, error, and empty states in every data-fetching component
+  - Use CSS token variables for colors, never hardcode hex values
+
+never:
+  - Call Firebase directly from a component
+  - Use inline styles
+  - Commit console.log statements
+  - Skip error boundaries on pages
+
+when writing hooks:
+  - Return { data, loading, error } shape
+  - Clean up Firestore listeners in useEffect return
+  - Handle offline state gracefully
+
+when writing Firestore helpers:
+  - Always include try/catch
+  - Log errors to console.error with context
+  - Return null on failure, never throw to the caller
