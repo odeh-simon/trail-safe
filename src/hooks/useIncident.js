@@ -9,12 +9,13 @@ import {
 import { db } from "@/lib/firebase";
 
 /**
- * Subscribe to active incidents for a hike
+ * Subscribe to incidents for a hike
  * @param {string|null} hikeId
  * @param {string|null} [leaderId] - Filter for incidents assigned to this leader
- * @returns {{ myIncidents: Array; otherIncidents: Array; loading: boolean; error: string|null }}
+ * @param {{ includeResolved?: boolean }} [opts] - If includeResolved, return all incidents
+ * @returns {{ myIncidents: Array; otherIncidents: Array; allIncidents: Array; loading: boolean; error: string|null }}
  */
-export function useIncident(hikeId, leaderId = null) {
+export function useIncident(hikeId, leaderId = null, { includeResolved = false } = {}) {
   const [myIncidents, setMyIncidents] = useState([]);
   const [otherIncidents, setOtherIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,9 +38,10 @@ export function useIncident(hikeId, leaderId = null) {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const all = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((i) => i.status === "active" || i.status === "responding");
+        let all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        if (!includeResolved) {
+          all = all.filter((i) => i.status === "active" || i.status === "responding");
+        }
         if (leaderId) {
           setMyIncidents(all.filter((i) => i.assignedLeaderId === leaderId));
           setOtherIncidents(all.filter((i) => i.assignedLeaderId !== leaderId));
@@ -50,13 +52,15 @@ export function useIncident(hikeId, leaderId = null) {
         setLoading(false);
       },
       (err) => {
+        // Fix BUG-11: Log missing index / failed-precondition
+        console.error("useIncident onSnapshot error:", err?.code, err?.message);
         setError(err.message);
         setLoading(false);
       }
     );
 
     return () => unsub();
-  }, [hikeId, leaderId]);
+  }, [hikeId, leaderId, includeResolved]);
 
   return { myIncidents, otherIncidents, loading, error };
 }

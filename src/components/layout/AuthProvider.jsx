@@ -12,6 +12,19 @@ export default function AuthProvider({ children }) {
   const location = useLocation();
 
   useEffect(() => {
+    const unlockAudio = () => {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        const ctx = new AudioContext();
+        ctx.resume?.();
+      }
+      document.removeEventListener("click", unlockAudio);
+    };
+    document.addEventListener("click", unlockAudio);
+    return () => document.removeEventListener("click", unlockAudio);
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function init() {

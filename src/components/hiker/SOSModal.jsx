@@ -58,7 +58,7 @@ export default function SOSModal({
       if (!isOnline || !incidentId) {
         onQueued();
       } else {
-        onSent();
+        onSent(incidentId);
       }
       onClose();
     } catch (err) {

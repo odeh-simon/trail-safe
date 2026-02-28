@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createHike, createLeadersForHike } from "@/lib/firestore";
+import { createHike } from "@/lib/firestore";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const DIFFICULTIES = ["easy", "moderate", "hard"];
@@ -53,7 +53,7 @@ export default function HikeForm({ onCreated }) {
       const hikeId = await createHike(hikeData);
       if (!hikeId) throw new Error("Failed to create hike");
 
-      await createLeadersForHike(hikeId, groups, []);
+      // Fix BUG-12: Leaders join via invite link, not at hike creation
       onCreated(hikeId);
     } catch (err) {
       setError(err.message || "Failed to create hike");

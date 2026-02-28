@@ -130,6 +130,23 @@ export async function checkInHiker(hikerId, location) {
 }
 
 /**
+ * Re-check-in after checkout
+ * @param {string} hikerId
+ * @param {{ lat: number; lng: number; accuracy?: number }} [location]
+ */
+export async function reCheckInHiker(hikerId, location = null) {
+  try {
+    await updateDoc(doc(db, "hikers", hikerId), {
+      checkedOut: false,
+      checkedOutAt: null,
+      lastLocation: location ? { ...location, timestamp: new Date() } : null,
+    });
+  } catch (err) {
+    console.error("reCheckInHiker:", err);
+  }
+}
+
+/**
  * @param {string} hikerId
  */
 export async function checkOutHiker(hikerId) {
@@ -155,12 +172,17 @@ export async function checkOutHiker(hikerId) {
  */
 export async function fireSOSIncident({ hikeId, hiker, type, note, location, leaders }) {
   try {
+    const hikerSnap = await getDoc(doc(db, "hikers", hiker.id));
+    const hikerData = hikerSnap.data() || {};
     const closest = findClosestLeader(location.lat, location.lng, leaders);
     const incident = {
       hikeId,
       hikerId: hiker.id,
       hikerName: hiker.name,
-      hikerMedicalInfo: hiker.medicalInfo || {},
+      hikerMedicalInfo: {
+        ...(hiker.medicalInfo || {}),
+        emergencyContact: hikerData.emergencyContact || {},
+      },
       type,
       note: note || "",
       coordinates: location,
@@ -210,6 +232,18 @@ export async function respondToIncident(incidentId, leaderId, leaderName) {
  * @param {string} incidentId
  * @param {string} actorId
  */
+/**
+ * Subscribe to a single incident
+ * @param {string} incidentId
+ * @param {(incident: object|null) => void} callback
+ * @returns {() => void} Unsubscribe
+ */
+export function subscribeToIncident(incidentId, callback) {
+  return onSnapshot(doc(db, "incidents", incidentId), (snap) => {
+    callback(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+  });
+}
+
 export async function resolveIncident(incidentId, actorId = "") {
   try {
     const snap = await getDoc(doc(db, "incidents", incidentId));
@@ -268,23 +302,70 @@ export async function updateLeaderLocation(leaderId, location) {
  * @param {string} userId
  * @param {string} name
  * @param {string} [phone]
+ * @param {string} [roleTitle]
  * @returns {Promise<string|null>}
  */
-export async function joinAsLeader(hikeId, userId, name, phone = "") {
+export async function joinAsLeader(hikeId, userId, name, phone = "", roleTitle = "") {
   try {
+    const q = query(
+      collection(db, "leaders"),
+      where("userId", "==", userId),
+      where("hikeId", "==", hikeId)
+    );
+    const existing = await getDocs(q);
+    if (!existing.empty) return existing.docs[0].id;
+
     const ref = await addDoc(collection(db, "leaders"), {
       userId,
       hikeId,
       groupId: null,
       name,
       phone,
+      roleTitle,
       isActive: true,
+      status: "available",
       lastLocation: null,
+      joinedAt: serverTimestamp(),
     });
     return ref.id;
   } catch (err) {
     console.error("joinAsLeader:", err);
     return null;
+  }
+}
+
+/**
+ * Assign a leader to a group
+ * @param {string} leaderId - Firestore doc ID of the leader
+ * @param {string|null} groupId
+ */
+export async function assignLeaderToGroup(leaderId, groupId) {
+  try {
+    await updateDoc(doc(db, "leaders", leaderId), { groupId });
+  } catch (err) {
+    console.error("assignLeaderToGroup:", err);
+  }
+}
+
+/**
+ * Auto-assign unassigned leaders to groups that have no leader
+ * @param {string} hikeId
+ * @param {Array<{ id: string }>} groups
+ */
+export async function autoAssignLeaders(hikeId, groups = []) {
+  try {
+    const q = query(collection(db, "leaders"), where("hikeId", "==", hikeId));
+    const snap = await getDocs(q);
+    const leaders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    const unassignedLeaders = leaders.filter((l) => !l.groupId);
+    const unledGroups = groups.filter((g) => !leaders.find((l) => l.groupId === g.id));
+
+    for (let i = 0; i < Math.min(unassignedLeaders.length, unledGroups.length); i++) {
+      await assignLeaderToGroup(unassignedLeaders[i].id, unledGroups[i].id);
+    }
+  } catch (err) {
+    console.error("autoAssignLeaders:", err);
   }
 }
 

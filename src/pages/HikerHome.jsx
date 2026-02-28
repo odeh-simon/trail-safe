@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +8,12 @@ import { useActiveHike } from "@/hooks/useActiveHike";
 import { useHikerProfile } from "@/hooks/useHikerProfile";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { checkInHiker, checkOutHiker } from "@/lib/firestore";
+import { checkInHiker, checkOutHiker, reCheckInHiker } from "@/lib/firestore";
+import { toast } from "@/hooks/use-toast";
+import { subscribeToIncident } from "@/lib/firestore";
 import SOSButton from "@/components/hiker/SOSButton";
 import SOSModal from "@/components/hiker/SOSModal";
+import BottomNav from "@/components/layout/BottomNav";
 
 export default function HikerHome() {
   const { user } = useAuthStore();
@@ -23,11 +26,21 @@ export default function HikerHome() {
   const [sosModalOpen, setSosModalOpen] = useState(false);
   const [sosSent, setSosSent] = useState(false);
   const [sosQueued, setSosQueued] = useState(false);
+  const [activeIncidentId, setActiveIncidentId] = useState(null);
+  const [activeIncident, setActiveIncident] = useState(null);
+
+  useEffect(() => {
+    if (!activeIncidentId) return;
+    return subscribeToIncident(activeIncidentId, (inc) => {
+      setActiveIncident(inc);
+    });
+  }, [activeIncidentId]);
 
   const handleCheckIn = async () => {
     if (!hiker?.id || !lat || !lng) return;
     setCheckingIn(true);
     await checkInHiker(hiker.id, { lat, lng, accuracy: accuracy ?? undefined });
+    toast({ title: "Checked in ✓" });
     setCheckingIn(false);
   };
 
@@ -35,8 +48,23 @@ export default function HikerHome() {
     if (!hiker?.id) return;
     setCheckingOut(true);
     await checkOutHiker(hiker.id);
+    toast({ title: "Checked out", description: "You can re-check in if needed." });
     setCheckingOut(false);
   };
+
+  const handleReCheckIn = async () => {
+    if (!hiker?.id) return;
+    setCheckingIn(true);
+    await reCheckInHiker(hiker.id, lat && lng ? { lat, lng, accuracy } : null);
+    toast({ title: "Checked back in ✓" });
+    setCheckingIn(false);
+  };
+
+  const hikerStatus = !hiker?.checkedIn
+    ? "not_checked_in"
+    : hiker.checkedOut
+      ? "checked_out"
+      : "checked_in";
 
   if (hikeLoading || hikerLoading) {
     return (
@@ -87,8 +115,10 @@ export default function HikerHome() {
             </Badge>
           </div>
           <p className="text-sm text-[var(--color-mid)]">{hike.trail}</p>
-          {hiker.groupId && (
-            <p className="text-xs text-[var(--color-mid)]">Group: {hiker.groupId}</p>
+          {(hike.groups?.find((g) => g.id === hiker.groupId)?.name || hiker.groupId) && (
+            <p className="text-xs text-[var(--color-mid)]">
+              Group: {hike.groups?.find((g) => g.id === hiker.groupId)?.name || hiker.groupId}
+            </p>
           )}
         </CardHeader>
       </Card>
@@ -98,21 +128,7 @@ export default function HikerHome() {
           <CardTitle>Check In</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {hiker.checkedIn ? (
-            <>
-              <p className="text-[var(--color-success)] font-medium">Checked in</p>
-              {hike.status === "active" && !hiker.checkedOut && (
-                <Button
-                  variant="outline"
-                  className="w-full min-h-[48px]"
-                  onClick={handleCheckOut}
-                  disabled={checkingOut}
-                >
-                  {checkingOut ? "Checking out..." : "Check Out"}
-                </Button>
-              )}
-            </>
-          ) : (
+          {hikerStatus === "not_checked_in" && (
             <>
               {accuracy != null && (
                 <p className="text-sm text-[var(--color-mid)]">GPS: ±{Math.round(accuracy)}m</p>
@@ -129,46 +145,104 @@ export default function HikerHome() {
               </Button>
             </>
           )}
+          {hikerStatus === "checked_in" && (
+            <>
+              <p className="text-[var(--color-success)] font-medium">✓ Checked in</p>
+              {hike.status === "active" && (
+                <Button
+                  variant="outline"
+                  className="w-full min-h-[48px]"
+                  onClick={handleCheckOut}
+                  disabled={checkingOut}
+                >
+                  {checkingOut ? "Checking out..." : "Check Out"}
+                </Button>
+              )}
+            </>
+          )}
+          {hikerStatus === "checked_out" && (
+            <>
+              <p className="text-[var(--color-mid)]">You checked out</p>
+              {hike.status === "active" && (
+                <>
+                  <Button
+                    className="w-full min-h-[48px] bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]"
+                    onClick={handleReCheckIn}
+                    disabled={checkingIn || !lat || !lng}
+                  >
+                    {checkingIn ? "Checking in..." : "Check Back In"}
+                  </Button>
+                  <p className="text-xs text-[var(--color-mid)]">
+                    Checked out by mistake? Check back in.
+                  </p>
+                </>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {hiker.checkedIn && hike.status === "active" && !hiker.checkedOut && (
+      {hikerStatus === "checked_in" && hike.status === "active" && (
         <div className="mb-4">
           {sosSent && (
-            <div className="mb-4 p-4 rounded-lg bg-[var(--color-primary-light)] border border-[var(--color-primary)]">
-              <p className="font-medium text-[var(--color-primary-dark)]">
-                SOS Sent — Help is on the way
-              </p>
-            </div>
+            <Card className="mb-4 border-[var(--color-primary)] bg-[var(--color-primary-light)]">
+              <CardContent className="pt-6 text-center">
+                {activeIncident?.status === "resolved" ? (
+                  <p className="text-2xl font-bold text-[var(--color-success)]">
+                    Help has arrived
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-[var(--color-primary-dark)]">
+                      Help is on the way
+                    </p>
+                    {activeIncident?.assignedLeaderName && (
+                      <>
+                        <p className="text-lg mt-2">{activeIncident.assignedLeaderName} is responding</p>
+                        {activeIncident.closestLeaderDistanceMeters != null && (
+                          <p className="text-3xl font-bold text-[var(--color-accent)] mt-2">
+                            ~{activeIncident.closestLeaderDistanceMeters}m away
+                          </p>
+                        )}
+                      </>
+                    )}
+                    <p className="text-sm text-[var(--color-mid)] mt-4">
+                      Stay where you are. Keep this screen visible.
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           )}
-          {sosQueued && (
+          {!sosSent && sosQueued && (
             <div className="mb-4 p-4 rounded-lg bg-[var(--color-warning)]/20 border border-[var(--color-warning)]">
               <p className="font-medium text-[var(--color-dark)]">
                 SOS Queued — will send when signal returns
               </p>
             </div>
           )}
-          <SOSButton
-            onPress={() => setSosModalOpen(true)}
-            hikeStatus={hike.status}
-          />
+          {!sosSent && (
+            <SOSButton
+              onPress={() => setSosModalOpen(true)}
+              hikeStatus={hike.status}
+            />
+          )}
           <SOSModal
             open={sosModalOpen}
             onClose={() => setSosModalOpen(false)}
             hike={hike}
             hiker={hiker}
-            onSent={() => setSosSent(true)}
+            onSent={(incidentId) => {
+              setSosSent(true);
+              if (incidentId) setActiveIncidentId(incidentId);
+            }}
             onQueued={() => setSosQueued(true)}
             isOnline={isOnline}
           />
         </div>
       )}
 
-      <div className="fixed bottom-20 left-0 right-0 max-w-[430px] mx-auto px-4">
-        <Button variant="outline" asChild className="w-full min-h-[48px]">
-          <Link to="/emergency-card">Emergency Card</Link>
-        </Button>
-      </div>
+      <BottomNav role="hiker" />
     </div>
   );
 }

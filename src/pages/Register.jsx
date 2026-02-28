@@ -6,15 +6,23 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useActiveHike } from "@/hooks/useActiveHike";
+import { useHike } from "@/hooks/useHike";
 import { registerHiker } from "@/lib/firestore";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const EMERGENCY_CARD_KEY = "trailsafe_emergency_card";
+const INVITE_HIKE_KEY = "trailsafe_invite_hikeId";
 
 export default function Register() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { hike, loading: hikeLoading, error: hikeError } = useActiveHike();
+  const inviteHikeId = typeof window !== "undefined" ? sessionStorage.getItem(INVITE_HIKE_KEY) : null;
+  const { data: hikeFromInvite, loading: inviteLoading, error: inviteError } = useHike(inviteHikeId || null);
+  const { hike: activeHike, loading: activeLoading, error: activeError } = useActiveHike();
+
+  const hike = inviteHikeId ? hikeFromInvite : activeHike;
+  const hikeLoading = inviteHikeId ? inviteLoading : activeLoading;
+  const hikeError = inviteHikeId ? inviteError : activeError;
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -77,6 +85,7 @@ export default function Register() {
         hikerId,
       };
       localStorage.setItem(EMERGENCY_CARD_KEY, JSON.stringify(emergencyCard));
+      sessionStorage.removeItem(INVITE_HIKE_KEY);
 
       navigate("/hiker");
     } catch (err) {

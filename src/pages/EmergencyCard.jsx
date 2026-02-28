@@ -1,12 +1,37 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const EMERGENCY_CARD_KEY = "trailsafe_emergency_card";
 
 export default function EmergencyCard() {
+  const [searchParams] = useSearchParams();
+  const hikerId = searchParams.get("hikerId");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (hikerId) {
+      getDoc(doc(db, "hikers", hikerId))
+        .then((snap) => {
+          if (snap.exists()) {
+            const d = snap.data();
+            setData({
+              name: d.name,
+              medicalInfo: d.medicalInfo || {},
+              emergencyContact: d.emergencyContact || {},
+              hikeName: d.hikeName,
+              hikeDate: d.hikeDate,
+            });
+          } else {
+            setData(null);
+          }
+        })
+        .catch(() => setData(null))
+        .finally(() => setLoading(false));
+      return;
+    }
     try {
       const raw = localStorage.getItem(EMERGENCY_CARD_KEY);
       if (raw) {
@@ -14,10 +39,9 @@ export default function EmergencyCard() {
       }
     } catch (err) {
       setData(null);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+    setLoading(false);
+  }, [hikerId]);
 
   if (loading) {
     return (
@@ -34,7 +58,9 @@ export default function EmergencyCard() {
           No Emergency Card
         </h1>
         <p className="text-[var(--color-mid)] text-center">
-          Register as a hiker first to save your emergency information.
+          {hikerId
+            ? "Hiker not found or has no emergency info."
+            : "Register as a hiker first to save your emergency information."}
         </p>
       </div>
     );

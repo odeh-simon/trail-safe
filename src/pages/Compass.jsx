@@ -1,4 +1,32 @@
 import { useEffect, useRef, useState } from "react";
+
+function CollapsibleEmergency({ incident }) {
+  const [open, setOpen] = useState(false);
+  const med = incident?.hikerMedicalInfo || {};
+  const ec = med.emergencyContact || {};
+  return (
+    <div className="mb-4">
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full border-[#334155] text-white hover:bg-[#334155]"
+        onClick={() => setOpen((o) => !o)}
+      >
+        {open ? "Hide" : "Show"} Hiker Emergency Info
+      </Button>
+      {open && (
+        <div className="mt-2 rounded-lg bg-[#1E293B] p-4 space-y-2 text-sm">
+          <p><strong>Blood Type:</strong> {med.bloodType || "—"}</p>
+          <p><strong>Conditions:</strong> {med.conditions || "—"}</p>
+          <p><strong>Medications:</strong> {med.medications || "—"}</p>
+          <p><strong>Allergies:</strong> {med.allergies || "—"}</p>
+          <p><strong>Emergency Contact:</strong> {ec.name || "—"}</p>
+          <p><strong>Contact Phone:</strong> {ec.phone || "—"}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +48,12 @@ export default function Compass() {
   const [resolving, setResolving] = useState(false);
   const { heading, requestPermission } = useCompass();
   const { lat, lng } = useGeolocation();
-  const intervalRef = useRef(null);
+  const latestCoordsRef = useRef({ lat: null, lng: null });
+
+  // Fix BUG-03: Keep ref updated whenever GPS changes
+  useEffect(() => {
+    latestCoordsRef.current = { lat, lng };
+  }, [lat, lng]);
 
   const hikerLat = incident?.coordinates?.lat;
   const hikerLng = incident?.coordinates?.lng;
@@ -57,14 +90,17 @@ export default function Compass() {
     return () => unsub();
   }, [incidentId]);
 
+  // Fix BUG-03: Single stable interval that reads from ref
   useEffect(() => {
-    if (!leader?.id || !lat || !lng) return;
-    updateLeaderLocation(leader.id, { lat, lng, accuracy: 10 });
-    intervalRef.current = setInterval(() => {
-      updateLeaderLocation(leader.id, { lat, lng, accuracy: 10 });
+    if (!leader?.id) return;
+    const id = setInterval(() => {
+      const { lat: currentLat, lng: currentLng } = latestCoordsRef.current;
+      if (currentLat && currentLng) {
+        updateLeaderLocation(leader.id, { lat: currentLat, lng: currentLng });
+      }
     }, 5000);
-    return () => clearInterval(intervalRef.current);
-  }, [leader?.id, lat, lng]);
+    return () => clearInterval(id);
+  }, [leader?.id]);
 
   const handleRespond = async () => {
     if (!incidentId || !leader) return;
@@ -109,6 +145,14 @@ export default function Compass() {
   }
 
   const med = incident.hikerMedicalInfo || {};
+  const distanceColor =
+    distance != null
+      ? distance < 50
+        ? "var(--color-success)"
+        : distance < 200
+          ? "var(--color-warning)"
+          : "var(--color-accent)"
+      : "inherit";
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-white p-4 flex flex-col">
@@ -126,7 +170,7 @@ export default function Compass() {
             }}
           />
         </div>
-        <p className="text-5xl font-bold text-[var(--color-accent)] mt-4">
+        <p style={{ color: distanceColor }} className="text-5xl font-bold mt-4">
           {distance != null ? `${distance}m` : hasValidHikerLocation ? "—" : "Location unavailable"}
         </p>
         <p className="text-xl mt-2">{incident.hikerName}</p>
@@ -143,13 +187,19 @@ export default function Compass() {
         )}
       </div>
 
+      <CollapsibleEmergency incident={incident} />
+
       <Card className="bg-[#1E293B] border-[#334155] mb-4">
         <CardContent className="pt-4">
           <p className="text-sm">
             <strong>Blood:</strong> {med.bloodType || "—"}
           </p>
           {med.conditions && <p className="text-sm">Conditions: {med.conditions}</p>}
+          {med.medications && <p className="text-sm">Medications: {med.medications}</p>}
           {med.allergies && <p className="text-sm">Allergies: {med.allergies}</p>}
+          {med.emergencyContact?.phone && (
+            <p className="text-sm">Emergency: {med.emergencyContact.phone}</p>
+          )}
         </CardContent>
       </Card>
 
