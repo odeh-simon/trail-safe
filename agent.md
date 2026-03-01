@@ -49,3 +49,12 @@ It must work OFFLINE on trails with no cell signal.
 ## User Roles
 organizer | leader | hiker
 Role stored in Firestore /users/{uid}.role
+
+## Auth Flow
+- Organizer: enters PIN on Landing → navigates to /organizer
+- Leader: opens /join/leader/:hikeId link → fills form → navigates to /leader
+- Hiker: opens /join/hiker/:hikeId link → navigates to /register → /hiker
+- RoleGuard protects all role-specific routes
+- AuthProvider uses onSnapshot on /users/{uid} to watch role in real-time
+- endHike() resets role to null for all participants → RoleGuard redirects all to /
+- Landing page has NO role selection buttons — only Organizer Access PIN

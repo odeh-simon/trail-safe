@@ -152,6 +152,7 @@ export default function Register() {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Your Details</CardTitle>
@@ -303,6 +304,7 @@ export default function Register() {
             </div>
           </CardContent>
         </Card>
+        </div>
 
         {errors.submit && (
           <p className="text-sm text-[var(--color-danger)]" role="alert">

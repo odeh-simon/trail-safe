@@ -1,89 +1,69 @@
 # Trail Safe — Testing Guide
 
-## Constraints (Organizer → Start Hike)
+## Auth Flow (Current)
 
-| Requirement | Needed? | Notes |
-|-------------|---------|-------|
-| Minimum hikers | **No** | You can start with 0 registered hikers |
-| Leaders assigned | **No** | Leaders join after the hike is created; SOS still works |
-| Groups created | **No** | Default 1 group is created with the hike |
+| Role | How They Access |
+|------|----------------|
+| Organizer | Landing → "Organizer Access" button → PIN dialog → /organizer |
+| Leader | `/join/leader/:hikeId` link shared by organizer → fill name/phone/role → /leader |
+| Hiker | `/join/hiker/:hikeId` link shared by organizer → auto-navigates to /register → /hiker |
 
-**You can start a hike as soon as it’s created.** Hikers can register before or after the hike is started; they can only check in once the hike is active.
+**The landing page no longer has "I'm Hiking Today" or "I'm a Leader" buttons.**
 
----
-
-## End-to-End Test Flow
+## Test Flow
 
 ### 1. Organizer: Create & Start Hike
 
-1. Open the app → **I'm Organizing**
-2. **Create Hike** → fill name, trail, date (required)
-3. Click **Create Hike** in the form
-4. You should see the hike card with status badge **upcoming**
-5. Helper text: *"No minimum hikers or leaders required. Start when ready — hikers can then check in."*
-6. Click **Start Hike**
-7. Button shows "Starting..."
-8. Toast: **Hike started** — Hikers can now check in.
-9. Status badge changes to **active**
-10. Button changes to **End Hike**
+1. Open the app → **Organizer Access**
+2. Enter PIN (default: `1234`)
+3. **Create Hike** → fill name, trail, date → **Create Hike**
+4. Hike appears with status **upcoming**
+5. Click **Start Hike** → status changes to **active**
+6. Copy the **Leader Invite Link** and **Hiker Invite Link** from the dashboard
 
-### 2. Hiker: Register & Check In
+### 2. Leader: Join via Invite Link
 
-1. Open the app in a **new tab** (or different browser)
-2. **I'm Hiking Today** → goes to Register
-3. If no active/upcoming hike exists: *"No upcoming or active hike found"* → **Back to Home**
-4. With an active or upcoming hike: see the registration form
-5. Fill required fields (name, phone, emergency contact, blood type)
-6. Click **Register**
-7. Redirected to Hiker Home with the hike card
-8. **Check In** button is enabled only when:
-   - Hike status is **active** (organizer has started it)
-   - GPS location is available (allow geolocation when prompted)
-9. Click **Check In** → button shows "Checked in"
-10. SOS button becomes visible after check-in
+1. Open the **Leader Invite Link** in a different browser/incognito window
+2. Fill in Full Name, Phone, Role/Title
+3. Click **Join as Leader** → redirected to /leader dashboard
 
-### 3. Leader (Optional)
+### 3. Hiker: Join via Invite Link
 
-1. **I'm a Leader**
-2. **Join as Leader** on Leader Home
-3. Leader can receive SOS alerts and respond with compass navigation
+1. Open the **Hiker Invite Link** in a different browser/device
+2. Auto-redirected to **/register**
+3. Fill in name, phone, blood type, emergency contact
+4. Click **Register** → redirected to /hiker
+5. Click **Check In** (requires hike to be active + GPS available)
+6. SOS button appears after check-in
 
----
+### 4. SOS Flow Test
+
+1. Hiker clicks **SOS** → select type → add note → **Send SOS**
+2. Leader receives alert sound + incident appears on dashboard
+3. Leader clicks **Respond** → opens Compass
+4. Leader navigates to hiker GPS location
+5. Leader clicks **Arrived — Close Incident**
+6. Hiker sees "Help has arrived"
+
+### 5. End Hike Test
+
+1. Organizer clicks **End Hike**
+2. All connected hiker/leader sessions are redirected to `/` within ~2 seconds
+3. Invite links for the ended hike show "no longer valid"
+4. Re-registering for ended hike shows "Registration Closed"
 
 ## Common Issues
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| Start Hike does nothing | Old bug: no refetch after start | Fixed: refetch + toast feedback |
-| Hiker Check In stays disabled | Old bug: hiker page didn’t get hike status updates | Fixed: `useActiveHike` uses real-time listener |
-| "No upcoming or active hike" | No hike created yet, or all hikes ended | Organizer creates a hike first |
-| GPS required for check-in | Browser needs location permission | Allow when prompted; use HTTPS (required for geolocation) |
-
----
+| No sound on SOS | Audio context not unlocked | Tap/click anywhere on the page first |
+| GPS required for check-in | Browser needs location permission | Allow when prompted; HTTPS required |
+| Invite link "no longer valid" | Hike ended or wrong hikeId in URL | Get fresh links from active hike |
+| Leader not dispatched | No leaders with GPS active | Leader must open Compass page for GPS |
 
 ## E2E Tests
 
 ```bash
-npm run build && npm run preview   # Start preview server
-npm run test:e2e                   # Runs against preview
-```
-
----
-
-## Visual Flow
-
-```
-Landing
-  ├── I'm Organizing → Organizer Dashboard
-  │     ├── Create Hike → form → Create
-  │     ├── Hike card (upcoming)
-  │     ├── Start Hike → toast + status → active
-  │     └── End Hike (when active)
-  │
-  ├── I'm a Leader → Leader Home → Join as Leader
-  │
-  └── I'm Hiking Today → Register (if hike exists)
-        └── Register → Hiker Home
-              └── Check In (enabled when hike active + GPS)
-                    └── SOS button appears
+npm run build && npm run preview
+npm run test:e2e
 ```

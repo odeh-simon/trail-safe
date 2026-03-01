@@ -1,28 +1,28 @@
 @import "./tokens.css";
 
-/* shadcn/ui CSS variables mapped to design tokens */
+/* shadcn/ui CSS variables — HSL for Tailwind bg-* etc */
 @layer base {
   :root {
-    --background: var(--color-bg);
-    --foreground: var(--color-dark);
-    --card: var(--color-surface);
-    --card-foreground: var(--color-dark);
-    --popover: var(--color-surface);
-    --popover-foreground: var(--color-dark);
-    --primary: var(--color-primary);
-    --primary-foreground: white;
-    --secondary: var(--color-bg-alt);
-    --secondary-foreground: var(--color-dark);
-    --muted: var(--color-bg-alt);
-    --muted-foreground: var(--color-mid);
-    --accent: var(--color-primary-light);
-    --accent-foreground: var(--color-primary-dark);
-    --destructive: var(--color-danger);
-    --destructive-foreground: white;
-    --border: var(--color-border);
-    --input: var(--color-border);
-    --ring: var(--color-primary);
-    --radius: var(--radius-md);
+    --background: 240 10% 97%;
+    --foreground: 215 28% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+    --primary: 142 72% 37%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 97%;
+    --secondary-foreground: 215 28% 17%;
+    --muted: 210 40% 97%;
+    --muted-foreground: 215 20% 35%;
+    --accent: 210 40% 97%;
+    --accent-foreground: 215 28% 17%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 142 72% 37%;
+    --radius: 0.5rem;
   }
 
   body {

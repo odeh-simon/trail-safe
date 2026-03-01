@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { playSOSAlert } from "@/lib/alertSound";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useActiveHike } from "@/hooks/useActiveHike";
 import { useLeaderProfile } from "@/hooks/useLeaderProfile";
+import { useGeolocation } from "@/hooks/useGeolocation";
 import { useIncident } from "@/hooks/useIncident";
 import { useHikersForHike } from "@/hooks/useHikersForHike";
-import { respondToIncident } from "@/lib/firestore";
+import { respondToIncident, updateLeaderLocation } from "@/lib/firestore";
 import BottomNav from "@/components/layout/BottomNav";
 
 export default function LeaderHome() {
@@ -23,6 +24,24 @@ export default function LeaderHome() {
     leader?.id ? leader.userId : null
   );
   const { hikers } = useHikersForHike(hike?.id);
+  const { lat, lng } = useGeolocation();
+
+  const latestLeaderCoordsRef = useRef({ lat: null, lng: null });
+
+  useEffect(() => {
+    latestLeaderCoordsRef.current = { lat, lng };
+  }, [lat, lng]);
+
+  useEffect(() => {
+    if (!leader?.id) return;
+    const intervalId = setInterval(() => {
+      const { lat: currentLat, lng: currentLng } = latestLeaderCoordsRef.current;
+      if (currentLat && currentLng) {
+        updateLeaderLocation(leader.id, { lat: currentLat, lng: currentLng });
+      }
+    }, 10000);
+    return () => clearInterval(intervalId);
+  }, [leader?.id]);
 
   const handleRespond = async (incidentId) => {
     if (!leader) return;
@@ -90,7 +109,7 @@ export default function LeaderHome() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] md:pt-16">
+    <div className="min-h-screen bg-[var(--color-bg)] md:pt-14">
       <div className="max-w-5xl mx-auto px-4 py-6 pb-24">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -131,6 +150,87 @@ export default function LeaderHome() {
         </Card>
       </div>
 
+      <div className="hidden md:grid md:grid-cols-2 gap-6 mb-4">
+        <div>
+          <h2 className="font-semibold text-[var(--color-dark)] mb-3">
+            Active Incidents
+            {allIncidents.length > 0 && (
+              <span className="ml-2 bg-[var(--color-danger)] text-white text-xs rounded-full px-2 py-0.5">
+                {allIncidents.length}
+              </span>
+            )}
+          </h2>
+          {incidentsLoading ? (
+            <p className="text-[var(--color-mid)] text-sm">Loading...</p>
+          ) : allIncidents.length === 0 ? (
+            <p className="text-[var(--color-mid)] text-sm py-8 text-center">No active incidents.</p>
+          ) : (
+            <div className="space-y-3">
+              {allIncidents.map((inc) => {
+                const isMine = inc.assignedLeaderId === leader.userId;
+                const coord = inc.coordinates;
+                const hasLoc = coord?.lat != null && coord?.lng != null && (coord.lat !== 0 || coord.lng !== 0);
+                const mapUrl = hasLoc ? `https://www.google.com/maps?q=${coord.lat},${coord.lng}` : null;
+                return (
+                  <Card key={inc.id} className={isMine ? "border-[var(--color-danger)]" : "border-[var(--color-warning)]"}>
+                    <CardContent className="pt-4">
+                      <p className="font-bold">{inc.hikerName}</p>
+                      <p className="text-sm text-[var(--color-mid)]">{inc.type} — {inc.note || "No note"}</p>
+                      <p className="text-xs text-[var(--color-mid)]">
+                        {inc.assignedLeaderName || "Unassigned"}
+                        {inc.closestLeaderDistanceMeters != null && ` · ~${inc.closestLeaderDistanceMeters}m`}
+                      </p>
+                      {hasLoc && (
+                        <p className="text-xs text-[var(--color-mid)] mt-1">
+                          {coord.lat?.toFixed(5)}, {coord.lng?.toFixed(5)}
+                          {mapUrl && <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-[var(--color-accent)] underline">Map</a>}
+                          <Link to={`/compass/${inc.id}`} className="ml-2 text-[var(--color-accent)] underline">Compass</Link>
+                        </p>
+                      )}
+                      {isMine && (
+                        <div className="flex gap-2 mt-2">
+                          {inc.status === "active" && (
+                            <Button size="sm" className="flex-1 bg-[var(--color-warning)] hover:bg-[var(--color-warning)]/90" onClick={() => handleRespond(inc.id)}>
+                              Respond
+                            </Button>
+                          )}
+                          <Link to={`/compass/${inc.id}`}>
+                            <Button size="sm" variant="outline">Compass</Button>
+                          </Link>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div>
+          <h2 className="font-semibold text-[var(--color-dark)] mb-3">
+            Checked-In Hikers
+            <span className="ml-2 text-[var(--color-success)] font-bold">{checkedIn}</span>
+          </h2>
+          <Card>
+            <CardContent className="pt-4">
+              {(hikers || []).filter((h) => h.checkedIn && !h.checkedOut).length === 0 ? (
+                <p className="text-[var(--color-mid)] text-sm py-4 text-center">No hikers checked in.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {(hikers || []).filter((h) => h.checkedIn && !h.checkedOut).map((h) => (
+                    <li key={h.id} className="flex justify-between py-1 border-b last:border-0">
+                      <span className="font-medium">{h.name}</span>
+                      <Link to={`/emergency-card?hikerId=${h.id}`} className="text-xs text-[var(--color-accent)] underline">Card</Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="md:hidden">
       <Tabs defaultValue="incidents" className="mb-4">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="incidents">Incidents</TabsTrigger>
@@ -225,6 +325,7 @@ export default function LeaderHome() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
 
         <BottomNav role="leader" incidentCount={activeCount} />
       </div>

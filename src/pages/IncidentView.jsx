@@ -96,51 +96,52 @@ export default function IncidentView() {
         </CardHeader>
       </Card>
 
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle className="text-base">Medical Info</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <p><strong>Blood Type:</strong> {med.bloodType || "—"}</p>
-          <p><strong>Conditions:</strong> {med.conditions || "—"}</p>
-          <p><strong>Medications:</strong> {med.medications || "—"}</p>
-          <p><strong>Allergies:</strong> {med.allergies || "—"}</p>
-          {(ec?.name || ec?.phone) && (
-            <>
-              <p><strong>Emergency Contact:</strong> {ec.name || "—"}</p>
-              <p><strong>Contact Phone:</strong> {ec.phone || "—"}</p>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {hasLoc && (
-        <Card className="mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Location</CardTitle>
+            <CardTitle className="text-base">Medical Info</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm">
-              {coord.lat?.toFixed(5)}, {coord.lng?.toFixed(5)}
-            </p>
-            {mapUrl && (
-              <a
-                href={mapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--color-accent)] underline"
-              >
-                Open in Google Maps
-              </a>
+          <CardContent className="space-y-2 text-sm">
+            <p><strong>Blood Type:</strong> {med.bloodType || "—"}</p>
+            <p><strong>Conditions:</strong> {med.conditions || "—"}</p>
+            <p><strong>Medications:</strong> {med.medications || "—"}</p>
+            <p><strong>Allergies:</strong> {med.allergies || "—"}</p>
+            {(ec?.name || ec?.phone) && (
+              <>
+                <p><strong>Emergency Contact:</strong> {ec.name || "—"}</p>
+                <p><strong>Contact Phone:</strong> {ec.phone || "—"}</p>
+              </>
             )}
-            <Link to={`/compass/${incident.id}`}>
-              <Button variant="outline" size="sm" className="mt-2">
-                Open Compass
-              </Button>
-            </Link>
           </CardContent>
         </Card>
-      )}
+        {hasLoc && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Location</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm">
+                {coord.lat?.toFixed(5)}, {coord.lng?.toFixed(5)}
+              </p>
+              {mapUrl && (
+                <a
+                  href={mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--color-accent)] underline"
+                >
+                  Open in Google Maps
+                </a>
+              )}
+              <Link to={`/compass/${incident.id}`}>
+                <Button variant="outline" size="sm" className="mt-2">
+                  Open Compass
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {incident.assignedLeaderName && (
         <Card className="mb-4">

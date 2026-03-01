@@ -128,110 +128,139 @@ export default function OrganizerDashboard() {
       )}
 
       {currentHike && !showCreateForm && (
-        <>
-          <Card className="mb-4">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">{currentHike.name}</CardTitle>
-                <Badge
-                  variant={
-                    currentHike.status === "active"
-                      ? "default"
-                      : currentHike.status === "ended"
-                        ? "secondary"
-                        : "outline"
-                  }
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          <div className="w-full lg:w-80 flex-shrink-0 space-y-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg">{currentHike.name}</CardTitle>
+                  <Badge
+                    variant={
+                      currentHike.status === "active"
+                        ? "default"
+                        : currentHike.status === "ended"
+                          ? "secondary"
+                          : "outline"
+                    }
+                  >
+                    {currentHike.status}
+                  </Badge>
+                </div>
+                <p className="text-sm text-[var(--color-mid)]">{currentHike.trail}</p>
+              </CardHeader>
+            </Card>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-2xl font-bold text-[var(--color-dark)]">{registered}</p>
+                  <p className="text-xs text-[var(--color-mid)]">Registered</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-2xl font-bold text-[var(--color-success)]">{checkedIn}</p>
+                  <p className="text-xs text-[var(--color-mid)]">Checked In</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-2xl font-bold text-[var(--color-mid)]">{checkedOut}</p>
+                  <p className="text-xs text-[var(--color-mid)]">Checked Out</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-2xl font-bold text-[var(--color-danger)]">{activeIncidentCount}</p>
+                  <p className="text-xs text-[var(--color-mid)]">Incidents</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Invite Links</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-[var(--color-mid)] mb-1">Leader Link</p>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={typeof window !== "undefined" ? `${window.location.origin}/join/leader/${currentHike.id}` : ""}
+                      className="text-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(`${window.location.origin}/join/leader/${currentHike.id}`)
+                          .then(() => toast({ title: "Copied!" }));
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-[var(--color-mid)] mb-1">Hiker Link</p>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={typeof window !== "undefined" ? `${window.location.origin}/join/hiker/${currentHike.id}` : ""}
+                      className="text-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(`${window.location.origin}/join/hiker/${currentHike.id}`)
+                          .then(() => toast({ title: "Copied!" }));
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-2">
+              {currentHike.status === "upcoming" && (
+                <>
+                  <p className="text-xs text-[var(--color-mid)]">
+                    No minimum hikers or leaders required. Start when ready.
+                  </p>
+                  <Button
+                    className="w-full min-h-[48px]"
+                    onClick={handleStartHike}
+                    disabled={starting}
+                  >
+                    {starting ? "Starting..." : "Start Hike"}
+                  </Button>
+                </>
+              )}
+              {currentHike.status === "active" && (
+                <Button
+                  variant="destructive"
+                  className="w-full min-h-[48px]"
+                  onClick={handleEndHike}
+                  disabled={ending}
                 >
-                  {currentHike.status}
-                </Badge>
-              </div>
-              <p className="text-sm text-[var(--color-mid)]">{currentHike.trail}</p>
-            </CardHeader>
-          </Card>
-
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Share Invite Links</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-sm font-medium mb-1">Leader Invite Link</p>
-                <div className="flex gap-2">
-                  <Input
-                    readOnly
-                    value={typeof window !== "undefined" ? `${window.location.origin}/join/leader/${currentHike.id}` : ""}
-                    className="text-sm"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const url = `${window.location.origin}/join/leader/${currentHike.id}`;
-                      navigator.clipboard?.writeText(url).then(() => toast({ title: "Copied to clipboard" }));
-                    }}
-                  >
-                    Copy
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium mb-1">Hiker Invite Link</p>
-                <div className="flex gap-2">
-                  <Input
-                    readOnly
-                    value={typeof window !== "undefined" ? `${window.location.origin}/join/hiker/${currentHike.id}` : ""}
-                    className="text-sm"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const url = `${window.location.origin}/join/hiker/${currentHike.id}`;
-                      navigator.clipboard?.writeText(url).then(() => toast({ title: "Copied to clipboard" }));
-                    }}
-                  >
-                    Copy
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2 mb-4">
-            <Card>
-              <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold text-[var(--color-dark)]">
-                  {registered}
-                </p>
-                <p className="text-xs text-[var(--color-mid)]">Registered</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold text-[var(--color-success)]">
-                  {checkedIn}
-                </p>
-                <p className="text-xs text-[var(--color-mid)]">In</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold text-[var(--color-mid)]">
-                  {checkedOut}
-                </p>
-                <p className="text-xs text-[var(--color-mid)]">Out</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold text-[var(--color-danger)]">
-                  {activeIncidentCount}
-                </p>
-                <p className="text-xs text-[var(--color-mid)]">Incidents</p>
-              </CardContent>
-            </Card>
+                  {ending ? "Ending..." : "End Hike"}
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                className="w-full min-h-[48px]"
+                onClick={() => setShowCreateForm(true)}
+              >
+                Create New Hike
+              </Button>
+            </div>
           </div>
 
+          <div className="flex-1 min-w-0">
           <Tabs defaultValue="overview" className="mb-4">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -361,46 +390,8 @@ export default function OrganizerDashboard() {
               </Card>
             </TabsContent>
           </Tabs>
-
-          <div className="space-y-2">
-            {currentHike.status === "upcoming" && (
-              <>
-                <p className="text-xs text-[var(--color-mid)]">
-                  No minimum hikers or leaders required. Start when ready — hikers can then check in.
-                </p>
-                <Button
-                  className="flex-1 min-h-[48px] w-full"
-                  onClick={handleStartHike}
-                  disabled={starting}
-                  title="Start the hike so registered hikers can check in"
-                >
-                  {starting ? "Starting..." : "Start Hike"}
-                </Button>
-              </>
-            )}
           </div>
-          <div className="flex gap-2">
-            {currentHike.status === "active" && (
-              <Button
-                variant="destructive"
-                className="flex-1 min-h-[48px]"
-                onClick={handleEndHike}
-                disabled={ending}
-                title="End the hike"
-              >
-                {ending ? "Ending..." : "End Hike"}
-              </Button>
-            )}
-          </div>
-
-          <Button
-            variant="outline"
-            className="w-full mt-2 min-h-[48px]"
-            onClick={() => setShowCreateForm(true)}
-          >
-            Create New Hike
-          </Button>
-        </>
+        </div>
       )}
       </div>
     </div>

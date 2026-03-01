@@ -401,30 +401,3 @@ export async function autoAssignLeaders(hikeId, groups = []) {
     console.error("autoAssignLeaders:", err);
   }
 }
-
-/**
- * Create leader docs when creating a hike. Call after createHike.
- * @param {string} hikeId
- * @param {Array<{ id: string; name: string; leaderId: string; color: string }>} groups
- * @param {Array<{ userId: string; name: string; phone: string }>} leaderProfiles
- */
-export async function createLeadersForHike(hikeId, groups, leaderProfiles = []) {
-  const profileMap = Object.fromEntries(leaderProfiles.map((p) => [p.userId, p]));
-  for (const g of groups || []) {
-    if (!g.leaderId) continue;
-    const profile = profileMap[g.leaderId] || { name: "Leader", phone: "" };
-    try {
-      await addDoc(collection(db, "leaders"), {
-        userId: g.leaderId,
-        hikeId,
-        groupId: g.id,
-        name: profile.name,
-        phone: profile.phone,
-        isActive: false,
-        lastLocation: null,
-      });
-    } catch (err) {
-      console.error("createLeadersForHike:", err);
-    }
-  }
-}

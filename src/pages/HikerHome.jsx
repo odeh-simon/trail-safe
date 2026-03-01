@@ -91,7 +91,7 @@ export default function HikerHome() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] md:pt-16">
+    <div className="min-h-screen bg-[var(--color-bg)] md:pt-14">
       <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Card>
