@@ -46,8 +46,13 @@ export function useOrganizerHikes(organizerId) {
           (h) => h.status === "active" || h.status === "upcoming"
         );
         setCurrentHike((prev) => {
-          if (prev && list.find((h) => h.id === prev.id)) {
-            return list.find((h) => h.id === prev.id);
+          const prevInList = prev && list.find((h) => h.id === prev.id);
+          const prevEnded = prevInList?.status === "ended";
+          if (prevEnded) {
+            return active || null;
+          }
+          if (prevInList) {
+            return prevInList;
           }
           return active || list[0] || null;
         });

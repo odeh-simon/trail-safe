@@ -1,12 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ensureAuth } from "@/lib/firestore";
 import { unlockAudioContext } from "@/lib/alertSound";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useHikeStore } from "@/store/useHikeStore";
+
+const INVITE_HIKE_KEY = "trailsafe_invite_hikeId";
 
 export default function AuthProvider({ children }) {
   const { setUser, setRole, setLoading } = useAuthStore();
+  const resetHikeStore = useHikeStore((s) => s.reset);
+  const prevRoleRef = useRef(undefined);
 
   useEffect(() => {
     const unlockAudio = () => {
@@ -37,6 +42,17 @@ export default function AuthProvider({ children }) {
           (snap) => {
             if (cancelled) return;
             const role = snap.exists() ? (snap.data().role ?? null) : null;
+            const hadRole =
+              prevRoleRef.current === "hiker" ||
+              prevRoleRef.current === "leader" ||
+              prevRoleRef.current === "organizer";
+            if (hadRole && role == null) {
+              try {
+                sessionStorage.removeItem(INVITE_HIKE_KEY);
+                resetHikeStore();
+              } catch (_) {}
+            }
+            prevRoleRef.current = role;
             setRole(role);
             setLoading(false);
           },
