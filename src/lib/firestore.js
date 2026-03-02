@@ -67,6 +67,35 @@ export async function getUserRole(uid) {
  */
 export async function createHike(hikeData) {
   try {
+    const existingQ = query(
+      collection(db, "hikes"),
+      where("organizerId", "==", hikeData.organizerId),
+      where("status", "in", ["upcoming", "active"])
+    );
+    const existingSnap = await getDocs(existingQ);
+    for (const existingDoc of existingSnap.docs) {
+      await updateDoc(existingDoc.ref, {
+        status: "ended",
+        endedAt: serverTimestamp(),
+        autoEnded: true,
+        autoEndReason: "new_hike_created",
+      });
+      const oldHikeId = existingDoc.id;
+      const hikersSnap = await getDocs(
+        query(collection(db, "hikers"), where("hikeId", "==", oldHikeId))
+      );
+      for (const h of hikersSnap.docs) {
+        const userId = h.data().userId;
+        if (userId) await setDoc(doc(db, "users", userId), { role: null }, { merge: true });
+      }
+      const leadersSnap = await getDocs(
+        query(collection(db, "leaders"), where("hikeId", "==", oldHikeId))
+      );
+      for (const l of leadersSnap.docs) {
+        const userId = l.data().userId;
+        if (userId) await setDoc(doc(db, "users", userId), { role: null }, { merge: true });
+      }
+    }
     const ref = await addDoc(collection(db, "hikes"), {
       ...hikeData,
       status: "upcoming",
@@ -155,7 +184,7 @@ export async function checkInHiker(hikerId, location) {
     await updateDoc(doc(db, "hikers", hikerId), {
       checkedIn: true,
       checkedInAt: serverTimestamp(),
-      lastLocation: { ...location, timestamp: new Date() },
+      lastLocation: location ? { ...location, timestamp: new Date() } : null,
     });
   } catch (err) {
     console.error("checkInHiker:", err);
@@ -400,4 +429,61 @@ export async function autoAssignLeaders(hikeId, groups = []) {
   } catch (err) {
     console.error("autoAssignLeaders:", err);
   }
+}
+
+/**
+ * Auto-ends hikes that were created more than 24h ago and never started,
+ * or started more than 24h ago and never ended. Called on organizer dashboard mount.
+ * @param {string} organizerId
+ */
+export async function autoEndStaleHikes(organizerId) {
+  try {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const q = query(
+      collection(db, "hikes"),
+      where("organizerId", "==", organizerId),
+      where("status", "in", ["upcoming", "active"])
+    );
+    const snap = await getDocs(q);
+    for (const hikeDoc of snap.docs) {
+      const data = hikeDoc.data();
+      const createdAt = data.createdAt?.toDate?.() ?? null;
+      if (createdAt && createdAt < cutoff) {
+        await updateDoc(hikeDoc.ref, {
+          status: "ended",
+          endedAt: serverTimestamp(),
+          autoEnded: true,
+          autoEndReason: "stale_24h",
+        });
+        const hikeId = hikeDoc.id;
+        const hikersSnap = await getDocs(
+          query(collection(db, "hikers"), where("hikeId", "==", hikeId))
+        );
+        for (const h of hikersSnap.docs) {
+          const userId = h.data().userId;
+          if (userId) await setDoc(doc(db, "users", userId), { role: null }, { merge: true });
+        }
+        const leadersSnap = await getDocs(
+          query(collection(db, "leaders"), where("hikeId", "==", hikeId))
+        );
+        for (const l of leadersSnap.docs) {
+          const userId = l.data().userId;
+          if (userId) await setDoc(doc(db, "users", userId), { role: null }, { merge: true });
+        }
+      }
+    }
+  } catch (err) {
+    console.error("autoEndStaleHikes:", err);
+  }
+}
+
+/**
+ * Clears all device-local state for the current session.
+ * Call when hike ends or user logs out.
+ */
+export function clearDeviceState() {
+  try {
+    localStorage.removeItem("trailsafe_emergency_card");
+    sessionStorage.removeItem("trailsafe_invite_hikeId");
+  } catch (_) {}
 }

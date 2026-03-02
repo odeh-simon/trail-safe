@@ -36,11 +36,12 @@ export default function SOSModal({
   const hasValidGps = lat != null && lng != null && (lat !== 0 || lng !== 0);
 
   const handleSend = async () => {
-    if (!type || !hike || !hiker || !hasValidGps) return;
+    if (!type || !hike || !hiker) return;
 
     setSending(true);
     try {
       const leaders = isOnline ? await getActiveLeaders(hike.id) : [];
+      const location = hasValidGps ? { lat, lng } : { lat: 0, lng: 0 };
       const incidentId = await fireSOSIncident({
         hikeId: hike.id,
         hiker: {
@@ -51,7 +52,7 @@ export default function SOSModal({
         },
         type,
         note: note.trim(),
-        location: { lat, lng },
+        location,
         leaders,
       });
 
@@ -114,9 +115,13 @@ export default function SOSModal({
             variant="destructive"
             className="w-full min-h-[64px] text-lg font-bold bg-[var(--color-danger)] hover:bg-[var(--color-danger-dark)]"
             onClick={handleSend}
-            disabled={!type || sending || !hasValidGps}
+            disabled={!type || sending}
           >
-            {sending ? "Sending..." : !hasValidGps ? "Waiting for GPS..." : "SEND SOS"}
+            {sending
+              ? "Sending..."
+              : !hasValidGps
+                ? "SEND SOS (no GPS — approximate location)"
+                : "SEND SOS"}
           </Button>
         </div>
       </DialogContent>

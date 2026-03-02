@@ -1,12 +1,10 @@
 import { useEffect, useRef } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { ensureAuth } from "@/lib/firestore";
+import { ensureAuth, clearDeviceState } from "@/lib/firestore";
 import { unlockAudioContext } from "@/lib/alertSound";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useHikeStore } from "@/store/useHikeStore";
-
-const INVITE_HIKE_KEY = "trailsafe_invite_hikeId";
 
 export default function AuthProvider({ children }) {
   const { setUser, setRole, setLoading } = useAuthStore();
@@ -48,7 +46,7 @@ export default function AuthProvider({ children }) {
               prevRoleRef.current === "organizer";
             if (hadRole && role == null) {
               try {
-                sessionStorage.removeItem(INVITE_HIKE_KEY);
+                clearDeviceState();
                 resetHikeStore();
               } catch (_) {}
             }

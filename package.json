@@ -15,7 +15,8 @@
     "test:coverage": "vitest run --coverage",
     "test:all": "npm run test:unit && npm run test:int && npm run test:e2e",
     "prepare": "husky",
-    "test:e2e:dev": "playwright test"
+    "test:e2e:dev": "playwright test",
+    "generate-icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
@@ -57,6 +58,7 @@
     "globals": "^16.5.0",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
+    "sharp": "^0.33.5",
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.18"

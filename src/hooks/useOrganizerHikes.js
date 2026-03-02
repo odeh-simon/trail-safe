@@ -42,19 +42,16 @@ export function useOrganizerHikes(organizerId) {
           )
           .slice(0, 10);
         setHikes(list);
-        const active = list.find(
-          (h) => h.status === "active" || h.status === "upcoming"
-        );
+        const active = list.find((h) => h.status === "active");
+        const upcoming = list.find((h) => h.status === "upcoming");
+        const nonEndedCurrent = active || upcoming || null;
         setCurrentHike((prev) => {
-          const prevInList = prev && list.find((h) => h.id === prev.id);
-          const prevEnded = prevInList?.status === "ended";
-          if (prevEnded) {
-            return active || null;
+          if (!prev) return nonEndedCurrent;
+          const prevInList = list.find((h) => h.id === prev.id);
+          if (!prevInList || prevInList.status === "ended") {
+            return nonEndedCurrent;
           }
-          if (prevInList) {
-            return prevInList;
-          }
-          return active || list[0] || null;
+          return prevInList;
         });
         setLoading(false);
       },

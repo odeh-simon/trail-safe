@@ -80,7 +80,7 @@ export default function LeaderHome() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] p-6 text-center max-w-md mx-auto">
         <div className="w-16 h-16 rounded-full bg-[var(--color-primary-light)] flex items-center justify-center mb-4 mx-auto">
-          <span className="text-3xl">🏔️</span>
+          <img src="/icons/mountain.svg" alt="Trail Safe" className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-[var(--color-dark)] mb-2">
           Hike Concluded

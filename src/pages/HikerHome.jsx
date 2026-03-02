@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useActiveHike } from "@/hooks/useActiveHike";
+import { useHike } from "@/hooks/useHike";
 import { useHikerProfile } from "@/hooks/useHikerProfile";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -15,9 +15,12 @@ import SOSButton from "@/components/hiker/SOSButton";
 import SOSModal from "@/components/hiker/SOSModal";
 import BottomNav from "@/components/layout/BottomNav";
 
+const INVITE_HIKE_KEY = "trailsafe_invite_hikeId";
+
 export default function HikerHome() {
   const { user } = useAuthStore();
-  const { hike, loading: hikeLoading } = useActiveHike();
+  const inviteHikeId = typeof window !== "undefined" ? sessionStorage.getItem(INVITE_HIKE_KEY) : null;
+  const { data: hike, loading: hikeLoading } = useHike(inviteHikeId || null);
   const { hiker, loading: hikerLoading } = useHikerProfile(user?.uid, hike?.id);
   const { lat, lng, accuracy, error: gpsError } = useGeolocation();
   const isOnline = useOnlineStatus();
@@ -37,9 +40,9 @@ export default function HikerHome() {
   }, [activeIncidentId]);
 
   const handleCheckIn = async () => {
-    if (!hiker?.id || !lat || !lng) return;
+    if (!hiker?.id) return;
     setCheckingIn(true);
-    await checkInHiker(hiker.id, { lat, lng, accuracy: accuracy ?? undefined });
+    await checkInHiker(hiker.id, lat && lng ? { lat, lng, accuracy: accuracy ?? undefined } : null);
     toast({ title: "Checked in ✓" });
     setCheckingIn(false);
   };
@@ -78,7 +81,7 @@ export default function HikerHome() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] p-6 text-center max-w-md mx-auto">
         <div className="w-16 h-16 rounded-full bg-[var(--color-primary-light)] flex items-center justify-center mb-4 mx-auto">
-          <span className="text-3xl">🏔️</span>
+          <img src="/icons/mountain.svg" alt="Trail Safe" className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-[var(--color-dark)] mb-2">
           Hike Concluded
@@ -124,16 +127,18 @@ export default function HikerHome() {
               {accuracy != null && (
                 <p className="text-sm text-[var(--color-mid)]">GPS: ±{Math.round(accuracy)}m</p>
               )}
-              {gpsError && (
-                <p className="text-sm text-[var(--color-danger)]">{gpsError}</p>
-              )}
               <Button
                 className="w-full min-h-[48px] bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]"
                 onClick={handleCheckIn}
-                disabled={!lat || !lng || checkingIn || hike.status !== "active"}
+                disabled={checkingIn || hike.status !== "active"}
               >
                 {checkingIn ? "Checking in..." : "Check In"}
               </Button>
+              {gpsError && (
+                <p className="text-xs text-[var(--color-warning)] mt-1">
+                  ⚠️ GPS unavailable — you can still check in, but your location won't be recorded.
+                </p>
+              )}
             </>
           )}
           {hikerStatus === "checked_in" && (
@@ -159,7 +164,7 @@ export default function HikerHome() {
                   <Button
                     className="w-full min-h-[48px] bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]"
                     onClick={handleReCheckIn}
-                    disabled={checkingIn || !lat || !lng}
+                    disabled={checkingIn}
                   >
                     {checkingIn ? "Checking in..." : "Check Back In"}
                   </Button>

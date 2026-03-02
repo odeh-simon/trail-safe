@@ -11,7 +11,7 @@ import { useOrganizerHikes } from "@/hooks/useOrganizerHikes";
 import { useHikersForHike } from "@/hooks/useHikersForHike";
 import { useLeadersForHike } from "@/hooks/useLeadersForHike";
 import { useIncident } from "@/hooks/useIncident";
-import { startHike, endHike } from "@/lib/firestore";
+import { startHike, endHike, autoEndStaleHikes } from "@/lib/firestore";
 import { toast } from "@/hooks/use-toast";
 import HikeForm from "@/components/organizer/HikeForm";
 import ManifestTable from "@/components/organizer/ManifestTable";
@@ -41,6 +41,11 @@ export default function OrganizerDashboard() {
   const activeIncidentCount =
     allIncidents?.filter((i) => i.status !== "resolved")?.length ?? 0;
   const prevIncidentCountRef = useRef(0);
+  useEffect(() => {
+    if (user?.uid) {
+      autoEndStaleHikes(user.uid);
+    }
+  }, [user?.uid]);
   useEffect(() => {
     if (prevIncidentCountRef.current > 0 && activeIncidentCount > prevIncidentCountRef.current) {
       playSOSAlert();
@@ -127,7 +132,25 @@ export default function OrganizerDashboard() {
         </div>
       )}
 
-      {currentHike && !showCreateForm && (
+      {currentHike?.status === "ended" && !showCreateForm && (
+        <Card className="mb-6 border-[var(--color-mid)]">
+          <CardContent className="pt-6 text-center space-y-4">
+            <div className="w-12 h-12 mx-auto">
+              <img src="/icons/mountain.svg" alt="Trail Safe" className="w-full h-full" />
+            </div>
+            <p className="font-semibold text-[var(--color-dark)]">
+              {currentHike.name} has ended.
+            </p>
+            <Button
+              className="w-full min-h-[48px]"
+              onClick={() => setShowCreateForm(true)}
+            >
+              Create New Hike
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      {currentHike && currentHike.status !== "ended" && !showCreateForm && (
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           <div className="w-full lg:w-80 flex-shrink-0 space-y-4">
             <Card>

@@ -21,22 +21,44 @@ export function useGeolocation(opts = {}) {
       return;
     }
 
-    const id = navigator.geolocation.watchPosition(
-      (pos) => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
-        setAccuracy(pos.coords.accuracy ?? null);
-        setError(null);
-        setLoading(false);
-      },
-      (err) => {
+    let watchId = null;
+    let fallbackId = null;
+    let resolved = false;
+
+    const onSuccess = (pos) => {
+      resolved = true;
+      setLat(pos.coords.latitude);
+      setLng(pos.coords.longitude);
+      setAccuracy(pos.coords.accuracy ?? null);
+      setError(null);
+      setLoading(false);
+    };
+
+    const onError = (err) => {
+      if (enableHighAccuracy && !resolved) {
+        fallbackId = navigator.geolocation.watchPosition(
+          onSuccess,
+          (fallbackErr) => {
+            setError(fallbackErr.message || "Geolocation error");
+            setLoading(false);
+          },
+          { enableHighAccuracy: false, timeout: 15000 }
+        );
+      } else {
         setError(err.message || "Geolocation error");
         setLoading(false);
-      },
-      { enableHighAccuracy, timeout }
-    );
+      }
+    };
 
-    return () => navigator.geolocation?.clearWatch?.(id);
+    watchId = navigator.geolocation.watchPosition(onSuccess, onError, {
+      enableHighAccuracy,
+      timeout,
+    });
+
+    return () => {
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      if (fallbackId != null) navigator.geolocation.clearWatch(fallbackId);
+    };
   }, [enableHighAccuracy, timeout]);
 
   return { lat, lng, accuracy, error, loading };

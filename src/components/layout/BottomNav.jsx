@@ -61,7 +61,8 @@ export default function BottomNav({ role, incidentCount = 0 }) {
 
       <header className="hidden md:flex fixed top-0 left-0 right-0 bg-[var(--color-surface)] border-b border-[var(--color-border)] z-40 px-6 h-14 items-center gap-8 shadow-sm">
         <Link to="/" className="font-bold text-[var(--color-primary)] text-lg mr-2 flex items-center gap-2">
-          🏔️ Trail Safe
+          <img src="/icons/mountain.svg" alt="Trail Safe" className="w-7 h-7" />
+          <span>Trail Safe</span>
         </Link>
         <div className="flex items-center gap-6">
           {navLinks}
