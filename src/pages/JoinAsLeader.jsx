@@ -9,6 +9,8 @@ import { useHike } from "@/hooks/useHike";
 import { useLeaderProfile } from "@/hooks/useLeaderProfile";
 import { setUserProfile, joinAsLeader } from "@/lib/firestore";
 
+const INVITE_HIKE_KEY = "trailsafe_invite_hikeId";
+
 export default function JoinAsLeader() {
   const { hikeId } = useParams();
   const navigate = useNavigate();
@@ -23,6 +25,7 @@ export default function JoinAsLeader() {
 
   useEffect(() => {
     if (!authLoading && !leaderLoading && leader) {
+      sessionStorage.setItem(INVITE_HIKE_KEY, leader.hikeId);
       navigate("/leader", { replace: true });
     }
   }, [authLoading, leaderLoading, leader, navigate]);
@@ -37,6 +40,7 @@ export default function JoinAsLeader() {
       setRole("leader");
       const leaderId = await joinAsLeader(hikeId, user.uid, name.trim(), phone.trim(), roleTitle.trim());
       if (!leaderId) throw new Error("Failed to join as leader");
+      sessionStorage.setItem(INVITE_HIKE_KEY, hikeId);
       navigate("/leader", { replace: true });
     } catch (err) {
       setSubmitError(err.message || "Failed to join");

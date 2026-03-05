@@ -85,7 +85,6 @@ export default function Register() {
         hikerId,
       };
       localStorage.setItem(EMERGENCY_CARD_KEY, JSON.stringify(emergencyCard));
-      sessionStorage.removeItem(INVITE_HIKE_KEY);
 
       navigate("/hiker");
     } catch (err) {

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useActiveHike } from "@/hooks/useActiveHike";
+import { useHike } from "@/hooks/useHike";
 import { useLeaderProfile } from "@/hooks/useLeaderProfile";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useIncident } from "@/hooks/useIncident";
@@ -14,11 +14,16 @@ import { useHikersForHike } from "@/hooks/useHikersForHike";
 import { respondToIncident, updateLeaderLocation } from "@/lib/firestore";
 import BottomNav from "@/components/layout/BottomNav";
 
+const INVITE_HIKE_KEY = "trailsafe_invite_hikeId";
+
 export default function LeaderHome() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { hike } = useActiveHike();
-  const { leader, loading: leaderLoading } = useLeaderProfile(user?.uid, hike?.id);
+  const leaderInviteHikeId = typeof window !== "undefined"
+    ? sessionStorage.getItem(INVITE_HIKE_KEY)
+    : null;
+  const { leader, loading: leaderLoading } = useLeaderProfile(user?.uid, leaderInviteHikeId);
+  const { data: hike, loading: hikeLoading } = useHike(leader?.hikeId || leaderInviteHikeId);
   const { myIncidents, otherIncidents, loading: incidentsLoading } = useIncident(
     hike?.status === "ended" ? null : hike?.id,
     leader?.id ? leader.userId : null
@@ -60,7 +65,7 @@ export default function LeaderHome() {
     prevCountRef.current = activeCount;
   }, [activeCount]);
 
-  if (leaderLoading) {
+  if (leaderLoading || hikeLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]">
         <p>Loading...</p>
