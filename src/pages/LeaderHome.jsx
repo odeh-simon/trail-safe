@@ -12,6 +12,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { useIncident } from "@/hooks/useIncident";
 import { useHikersForHike } from "@/hooks/useHikersForHike";
 import { respondToIncident, updateLeaderLocation } from "@/lib/firestore";
+import { formatDistance } from "@/lib/formatDistance";
 import BottomNav from "@/components/layout/BottomNav";
 
 const INVITE_HIKE_KEY = "trailsafe_invite_hikeId";
@@ -183,7 +184,7 @@ export default function LeaderHome() {
                       <p className="text-sm text-[var(--color-mid)]">{inc.type} — {inc.note || "No note"}</p>
                       <p className="text-xs text-[var(--color-mid)]">
                         {inc.assignedLeaderName || "Unassigned"}
-                        {inc.closestLeaderDistanceMeters != null && ` · ~${inc.closestLeaderDistanceMeters}m`}
+                        {inc.closestLeaderDistanceMeters != null && ` · ~${formatDistance(inc.closestLeaderDistanceMeters)}`}
                       </p>
                       {hasLoc && (
                         <p className="text-xs text-[var(--color-mid)] mt-1">
@@ -265,7 +266,7 @@ export default function LeaderHome() {
                       </p>
                       <p className="text-xs text-[var(--color-mid)]">
                         {inc.assignedLeaderName || "Unassigned"}
-                        {inc.closestLeaderDistanceMeters != null && ` · ~${inc.closestLeaderDistanceMeters}m`}
+                        {inc.closestLeaderDistanceMeters != null && ` · ~${formatDistance(inc.closestLeaderDistanceMeters)}`}
                       </p>
                       {hasLoc && (
                         <p className="text-xs text-[var(--color-mid)] mt-1">

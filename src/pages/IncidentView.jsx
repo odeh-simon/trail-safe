@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { subscribeToIncident, resolveIncident } from "@/lib/firestore";
+import { formatDistance } from "@/lib/formatDistance";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function IncidentView() {
@@ -151,7 +152,7 @@ export default function IncidentView() {
             </p>
             {incident.closestLeaderDistanceMeters != null && (
               <p className="text-sm text-[var(--color-mid)]">
-                Distance: ~{incident.closestLeaderDistanceMeters}m
+                Distance: ~{formatDistance(incident.closestLeaderDistanceMeters)}
               </p>
             )}
           </CardContent>

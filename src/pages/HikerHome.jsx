@@ -11,6 +11,7 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { checkInHiker, checkOutHiker, reCheckInHiker } from "@/lib/firestore";
 import { toast } from "@/hooks/use-toast";
 import { subscribeToIncident } from "@/lib/firestore";
+import { formatDistance } from "@/lib/formatDistance";
 import SOSButton from "@/components/hiker/SOSButton";
 import SOSModal from "@/components/hiker/SOSModal";
 import BottomNav from "@/components/layout/BottomNav";
@@ -198,7 +199,7 @@ export default function HikerHome() {
                         <p className="text-lg mt-2">{activeIncident.assignedLeaderName} is responding</p>
                         {activeIncident.closestLeaderDistanceMeters != null && (
                           <p className="text-3xl font-bold text-[var(--color-accent)] mt-2">
-                            ~{activeIncident.closestLeaderDistanceMeters}m away
+                            ~{formatDistance(activeIncident.closestLeaderDistanceMeters)} away
                           </p>
                         )}
                       </>
